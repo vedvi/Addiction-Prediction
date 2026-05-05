@@ -29,7 +29,7 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Mohit067/ScreenTime-Analyzer.git
+git clone https://github.com/vedvi/Addiction-Prediction.git
 cd ScreenTime-Analyzer
 ```
 
