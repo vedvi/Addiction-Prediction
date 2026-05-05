@@ -1,0 +1,23 @@
+# ── Core AI ───────────────────────────────────────────────
+dspy==3.2.0
+litellm==1.82.6
+openai==2.32.0
+
+# ── Backend API ───────────────────────────────────────────
+fastapi==0.136.1
+uvicorn==0.46.0
+starlette==1.0.0
+python-dotenv==1.2.2
+
+# ── Frontend ──────────────────────────────────────────────
+streamlit==1.56.0
+plotly==6.7.0
+pandas==3.0.2
+requests==2.33.1
+
+# ── Data & Utilities ─────────────────────────────────────
+numpy==2.4.4
+pydantic==2.13.3
+tiktoken==0.12.0
+regex==2026.4.4
+pyyaml==6.0.3
