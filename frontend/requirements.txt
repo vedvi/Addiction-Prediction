@@ -1,0 +1,21 @@
+# ── Core AI ───────────────────────────────────────────────
+dspy
+litellm
+openai
+
+# ── Backend API ───────────────────────────────────────────
+fastapi
+uvicorn[standard]
+python-dotenv
+
+# ── Frontend ──────────────────────────────────────────────
+streamlit
+altair
+pandas
+requests
+
+# ── Data & Utilities ─────────────────────────────────────
+numpy
+pydantic
+tiktoken
+pyyaml

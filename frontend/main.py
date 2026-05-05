@@ -588,7 +588,7 @@ st.markdown(f"""
 submitted = st.button("✨  Analyze My Screen Time", use_container_width=True, type="primary")  # noqa
 
 if submitted:
-    if not user_name.strip():
+    if not user_name.strip():   
         st.warning("Please enter your name before analyzing.")
     elif clean_df.empty:
         st.warning("Please add at least one app before analyzing.")
