@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+import altair as alt
 import requests
 
 # ── Backend API URL ───────────────────────────────────────────────────────────
@@ -492,31 +491,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Plotly theme helper ───────────────────────────────────────────────────────
+# ── Altair theme helper ───────────────────────────────────────────────────────
 
-CHART_COLORS = [
-    '#6C63FF', '#A78BFA', '#F472B6', '#34D399',
-    '#FBBF24', '#F87171', '#38BDF8', '#818CF8',
-]
+CHART_COLORS = ['#6C63FF', '#A78BFA', '#F472B6', '#34D399',
+                '#FBBF24', '#F87171', '#38BDF8', '#818CF8']
 
-
-def _plotly_dark_layout(fig, title=""):
-    """Apply a consistent dark transparent layout to any Plotly figure."""
-    fig.update_layout(
-        title=dict(text=title, font=dict(
-            color='#E8E6F0', size=16, family='Inter')),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#9B97B0', family='Inter'),
-        margin=dict(l=20, r=20, t=50, b=20),
-        legend=dict(
-            bgcolor='rgba(30,32,48,.5)',
-            bordercolor='rgba(108,99,255,.18)',
-            borderwidth=1,
-            font=dict(color='#E8E6F0'),
-        ),
+def _apply_dark_theme(chart):
+    """Apply the dark glassmorphism theme to any Altair chart."""
+    return (
+        chart
+        .configure(background='transparent', font='Inter')
+        .configure_axis(
+            labelColor='#9B97B0',
+            titleColor='#E8E6F0',
+            gridColor='rgba(108,99,255,.10)',
+        )
+        .configure_legend(
+            labelColor='#E8E6F0',
+            titleColor='#E8E6F0',
+        )
+        .configure_title(
+            color='#E8E6F0',
+            font='Inter',
+        )
     )
-    return fig
 
 
 # ── Hero Header ───────────────────────────────────────────────────────────────
@@ -663,67 +661,70 @@ if submitted:
 
                 with chart_col1:
                     cat_df = clean_df.groupby("type", as_index=False)["hours"].sum()
-                    fig_donut = go.Figure(
-                        go.Pie(
-                            labels=cat_df["type"],
-                            values=cat_df["hours"],
-                            hole=0.55,
-                            marker=dict(colors=CHART_COLORS[:len(cat_df)]),
-                            textinfo="label+percent",
-                            textfont=dict(color="#E8E6F0", size=12),
-                            hovertemplate="<b>%{label}</b><br>%{value:.1f} hrs<br>%{percent}<extra></extra>",
-                        )
+                    donut = alt.Chart(cat_df).mark_arc(
+                        innerRadius=60, outerRadius=110, cornerRadius=4,
+                    ).encode(
+                        theta=alt.Theta("hours:Q", stack=True),
+                        color=alt.Color(
+                            "type:N",
+                            scale=alt.Scale(range=CHART_COLORS),
+                            legend=alt.Legend(title="Category", labelColor="#E8E6F0", titleColor="#E8E6F0"),
+                        ),
+                        tooltip=[
+                            alt.Tooltip("type:N", title="Category"),
+                            alt.Tooltip("hours:Q", title="Hours", format=".1f"),
+                        ],
+                    ).properties(
+                        title="Usage by Category",
+                        width="container", height=320,
                     )
-                    _plotly_dark_layout(fig_donut, "Usage by Category")
-                    fig_donut.update_layout(showlegend=False, height=340)
-                    st.plotly_chart(fig_donut, width="stretch")
+                    st.altair_chart(_apply_dark_theme(donut), use_container_width=True)
 
                 with chart_col2:
-                    sorted_df = clean_df.sort_values("hours", ascending=True)
-                    fig_bar = go.Figure(
-                        go.Bar(
-                            y=sorted_df["name"],
-                            x=sorted_df["hours"],
-                            orientation="h",
-                            marker=dict(
-                                color=sorted_df["hours"],
-                                colorscale=[[0, '#6C63FF'], [0.5, '#A78BFA'], [1, '#F472B6']],
-                                cornerradius=6,
-                            ),
-                            text=sorted_df["hours"].apply(lambda v: f"{v:.1f}h"),
-                            textposition="outside",
-                            textfont=dict(color="#E8E6F0"),
-                            hovertemplate="<b>%{y}</b><br>%{x:.1f} hrs<extra></extra>",
-                        )
-                    )
-                    _plotly_dark_layout(fig_bar, "Hours per App")
-                    fig_bar.update_yaxes(tickfont=dict(color="#E8E6F0"), gridcolor="rgba(108,99,255,.06)")
-                    fig_bar.update_xaxes(tickfont=dict(color="#9B97B0"), gridcolor="rgba(108,99,255,.06)")
-                    fig_bar.update_layout(height=340)
-                    st.plotly_chart(fig_bar, width="stretch")
-
-                # --- Category breakdown radar chart ---
-                if len(cat_df) >= 3:
-                    fig_radar = go.Figure()
-                    fig_radar.add_trace(go.Scatterpolar(
-                        r=cat_df["hours"].tolist() + [cat_df["hours"].iloc[0]],
-                        theta=cat_df["type"].tolist() + [cat_df["type"].iloc[0]],
-                        fill='toself',
-                        fillcolor='rgba(108,99,255,.15)',
-                        line=dict(color='#6C63FF', width=2),
-                        marker=dict(color='#A78BFA', size=7),
-                        hovertemplate="<b>%{theta}</b><br>%{r:.1f} hrs<extra></extra>",
-                    ))
-                    _plotly_dark_layout(fig_radar, "Category Radar")
-                    fig_radar.update_layout(
-                        polar=dict(
-                            bgcolor='rgba(0,0,0,0)',
-                            radialaxis=dict(gridcolor='rgba(108,99,255,.12)', color='#9B97B0'),
-                            angularaxis=dict(gridcolor='rgba(108,99,255,.12)', color='#E8E6F0'),
+                    sorted_df = clean_df.sort_values("hours", ascending=False)
+                    bars = alt.Chart(sorted_df).mark_bar(
+                        cornerRadiusEnd=6, height=22,
+                    ).encode(
+                        x=alt.X("hours:Q", title="Hours",
+                                axis=alt.Axis(labelColor="#9B97B0", titleColor="#E8E6F0", gridColor="rgba(108,99,255,.08)")),
+                        y=alt.Y("name:N", title=None, sort="-x",
+                                axis=alt.Axis(labelColor="#E8E6F0")),
+                        color=alt.Color(
+                            "hours:Q",
+                            scale=alt.Scale(range=["#6C63FF", "#A78BFA", "#F472B6"]),
+                            legend=None,
                         ),
-                        height=380,
+                        tooltip=[
+                            alt.Tooltip("name:N", title="App"),
+                            alt.Tooltip("hours:Q", title="Hours", format=".1f"),
+                        ],
+                    ).properties(
+                        title="Hours per App",
+                        width="container", height=320,
                     )
-                    st.plotly_chart(fig_radar, width="stretch")
+                    st.altair_chart(_apply_dark_theme(bars), use_container_width=True)
+
+                # --- Category radial chart ---
+                if len(cat_df) >= 3:
+                    radial = alt.Chart(cat_df).mark_arc(
+                        innerRadius=20, stroke="#6C63FF", strokeWidth=2,
+                    ).encode(
+                        theta=alt.Theta("hours:Q", stack=True),
+                        radius=alt.Radius("hours:Q", scale=alt.Scale(type="sqrt", zero=True, rangeMin=30)),
+                        color=alt.Color(
+                            "type:N",
+                            scale=alt.Scale(range=CHART_COLORS),
+                            legend=alt.Legend(title="Category", labelColor="#E8E6F0", titleColor="#E8E6F0"),
+                        ),
+                        tooltip=[
+                            alt.Tooltip("type:N", title="Category"),
+                            alt.Tooltip("hours:Q", title="Hours", format=".1f"),
+                        ],
+                    ).properties(
+                        title="Category Distribution",
+                        width="container", height=350,
+                    )
+                    st.altair_chart(_apply_dark_theme(radial), use_container_width=True)
 
                 # --- AI text insights ---
                 st.markdown("""

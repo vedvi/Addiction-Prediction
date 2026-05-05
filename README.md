@@ -65,13 +65,13 @@ source .venv/bin/activate
 Using **uv**:
 
 ```bash
-uv pip install streamlit dspy plotly fastapi uvicorn requests
+uv pip install streamlit dspy altair fastapi uvicorn requests
 ```
 
 Or using **pip**:
 
 ```bash
-pip install streamlit dspy plotly fastapi uvicorn requests
+pip install streamlit dspy altair fastapi uvicorn requests
 ```
 
 ### 4. Set Up Environment Variables
@@ -191,7 +191,7 @@ The app uses **SQLite** (zero setup required). A `screentime.db` file is auto-cr
 | **LLM Provider** | [Groq](https://groq.com) (free tier available) |
 | **Backend API** | [FastAPI](https://fastapi.tiangolo.com) + [Uvicorn](https://www.uvicorn.org) |
 | **Frontend** | [Streamlit](https://streamlit.io) |
-| **Charts** | [Plotly](https://plotly.com/python/) |
+| **Charts** | [Altair](https://altair-viz.github.io) (bundled with Streamlit) |
 | **Database** | SQLite (built-in Python) |
 | **Styling** | Custom CSS — glassmorphism, Inter font, particle canvas |
 
