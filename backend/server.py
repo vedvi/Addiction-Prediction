@@ -159,4 +159,4 @@ def user_history(user_name: str, limit: int = 5):
 # ── Run ───────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    uvicorn.run("backend.server:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
