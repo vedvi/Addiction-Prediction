@@ -28,8 +28,8 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/ScreenTimeAI.git
-cd ScreenTimeAI
+git clone https://github.com/Mohit067/ScreenTime-Analyzer.git
+cd ScreenTime-Analyzer
 ```
 
 ### 2. Create a Virtual Environment
