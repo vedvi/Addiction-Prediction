@@ -38,13 +38,13 @@ cd ScreenTime-Analyzer
 Using **uv** (recommended):
 
 ```bash
-uv venv
+uv init
 ```
 
 Or using **Python**:
 
 ```bash
-python -m venv .venv
+uv venv .venv --python 3.11 
 ```
 
 Activate it:
@@ -65,7 +65,7 @@ source .venv/bin/activate
 Using **uv**:
 
 ```bash
-uv pip install streamlit dspy altair fastapi uvicorn requests
+uv add streamlit dspy altair fastapi uvicorn requests
 ```
 
 Or using **pip**:
