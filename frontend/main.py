@@ -4,8 +4,7 @@ import altair as alt
 import requests
 
 # ── Backend API URL ───────────────────────────────────────────────────────────
-API_URL = "http://localhost:8000"
-
+API_URL = "https://screentime-analyzer-5.onrender.com"
 
 def api_analyze(user_name: str, daily_usage_hours: float, apps: list) -> dict:
     """Call the /analyze endpoint and return the response dict."""
@@ -553,21 +552,18 @@ st.markdown("""
 # Empty placeholder rows — fill in your apps, add/delete rows freely
 _placeholder_apps = pd.DataFrame(
     [
-        {"name": "", "hours": 0.0, "type": "social media"},
-        {"name": "", "hours": 0.0, "type": "social media"},
-        {"name": "", "hours": 0.0, "type": "social media"},
+        {"name": "", "hours": 0.0, "type": ""},
+        {"name": "", "hours": 0.0, "type": ""},
+        {"name": "", "hours": 0.0, "type": ""},
     ]
 )
-
-app_types = ["social media", "education", "games",
-             "productivity", "entertainment", "other"]
 
 edited_df = st.data_editor(
     _placeholder_apps,
     column_config={
         "name":  st.column_config.TextColumn("App Name", required=True),
         "hours": st.column_config.NumberColumn("Usage (Hours)", min_value=0.0, max_value=24.0, required=True),
-        "type":  st.column_config.SelectboxColumn("App Category", options=app_types, required=True),
+        "type":  st.column_config.TextColumn("App Category", required=True),
     },
     num_rows="dynamic",
     width="stretch",
