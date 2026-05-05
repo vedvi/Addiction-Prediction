@@ -5,7 +5,7 @@ openai
 
 # ── Backend API ───────────────────────────────────────────
 fastapi
-uvicorn[standard]
+uvicorn
 python-dotenv
 
 # ── Frontend ──────────────────────────────────────────────
