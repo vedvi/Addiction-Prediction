@@ -11,8 +11,8 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import uvicorn
 
-from backend.main import analyze_user
-from backend.database import (
+from main import analyze_user
+from database import (
     get_or_create_user,
     save_analysis,
     get_user_history,
