@@ -552,18 +552,28 @@ st.markdown("""
 # Empty placeholder rows — fill in your apps, add/delete rows freely
 _placeholder_apps = pd.DataFrame(
     [
-        {"name": "", "hours": 0.0, "type": ""},
-        {"name": "", "hours": 0.0, "type": ""},
-        {"name": "", "hours": 0.0, "type": ""},
+        {"name": "instagram", "hours": 0.0, "type": "social media"},
+        {"name": "bgmi", "hours": 0.0, "type": "games"},
+        {"name": "youtube", "hours": 0.0, "type": "entertainment"},
+        {"name": "whatsapp", "hours": 0.0, "type": "social media"},
+        {"name": "chrome", "hours": 0.0, "type": "education"},  
+        {"name": "leetcode", "hours": 0.0, "type": "education"},
     ]
 )
+
+app_types = [
+    "social media", "education", "games", "productivity",
+    "entertainment", "health", "finance", "news",
+    "music", "shopping", "travel", "food",
+    "communication", "photography", "work", "other",
+]
 
 edited_df = st.data_editor(
     _placeholder_apps,
     column_config={
         "name":  st.column_config.TextColumn("App Name", required=True),
         "hours": st.column_config.NumberColumn("Usage (Hours)", min_value=0.0, max_value=24.0, required=True),
-        "type":  st.column_config.TextColumn("App Category", required=True),
+        "type":  st.column_config.SelectboxColumn("App Category", options=app_types, required=True),
     },
     num_rows="dynamic",
     width="stretch",
