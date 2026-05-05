@@ -1,15 +1,40 @@
-import sys
-import os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import requests
 
-# Ensure backend can be imported
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# ── Backend API URL ───────────────────────────────────────────────────────────
+API_URL = "http://localhost:8000"
 
-from backend.main import analyze_user
-from backend.database import get_or_create_user, save_analysis, get_user_history, get_all_users
+
+def api_analyze(user_name: str, daily_usage_hours: float, apps: list) -> dict:
+    """Call the /analyze endpoint and return the response dict."""
+    resp = requests.post(
+        f"{API_URL}/analyze",
+        json={
+            "user_name": user_name,
+            "daily_usage_hours": daily_usage_hours,
+            "apps": apps,
+        },
+        timeout=120,
+    )
+    if resp.status_code != 200:
+        detail = resp.json().get("detail", resp.text)
+        raise Exception(detail)
+    return resp.json()
+
+
+def api_get_history(user_name: str, limit: int = 5) -> list:
+    """Call the /history endpoint and return list of past analyses."""
+    resp = requests.get(
+        f"{API_URL}/history/{user_name}",
+        params={"limit": limit},
+        timeout=10,
+    )
+    if resp.status_code != 200:
+        return []
+    return resp.json()
 
 # Streamlit Page Config
 st.set_page_config(page_title="ScreenTime AI",
@@ -582,15 +607,13 @@ if submitted:
         with st.spinner("Agent is analyzing your behavior..."):
             try:
                 apps_list = clean_df.to_dict("records")
-                db_user_id = get_or_create_user(user_name)
 
-                userusage = {
-                    "user_id": str(db_user_id),
-                    "daily_usage_hours": auto_total,   # ← always matches the table
-                    "apps": apps_list,
-                }
-
-                analysis = analyze_user(userusage)
+                # Call the FastAPI backend — it handles user creation + saving
+                result = api_analyze(
+                    user_name=user_name.strip(),
+                    daily_usage_hours=auto_total,
+                    apps=apps_list,
+                )
 
                 # ── Results Header ────────────────────────────────────────
                 st.markdown("""
@@ -606,12 +629,12 @@ if submitted:
                     st.markdown(f"""
                     <div class="result-card summary animate-in d1">
                         <h4>📝 Summary</h4>
-                        <p>{analysis.summary}</p>
+                        <p>{result["summary"]}</p>
                     </div>
                     """, unsafe_allow_html=True)
 
                 with col2:
-                    is_addicted = str(analysis.isAddicted).strip().lower()
+                    is_addicted = str(result["is_addicted"]).strip().lower()
                     if is_addicted == "true":
                         st.markdown("""
                         <div class="result-card addicted animate-in d2">
@@ -628,8 +651,7 @@ if submitted:
                         """, unsafe_allow_html=True)
 
                 # ── Actionable Insights + Charts ──────────────────────────
-                st.markdown('<div class="divider"></div>',
-                            unsafe_allow_html=True)
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
                 st.markdown("""
                 <div class="hero-header" style="padding-top:.5rem; padding-bottom:.2rem;">
                     <h1 style="font-size:1.6rem;">💡 Actionable Insights</h1>
@@ -640,9 +662,7 @@ if submitted:
                 chart_col1, chart_col2 = st.columns(2)
 
                 with chart_col1:
-                    # Donut chart — usage share by category
-                    cat_df = clean_df.groupby("type", as_index=False)[
-                        "hours"].sum()
+                    cat_df = clean_df.groupby("type", as_index=False)["hours"].sum()
                     fig_donut = go.Figure(
                         go.Pie(
                             labels=cat_df["type"],
@@ -659,7 +679,6 @@ if submitted:
                     st.plotly_chart(fig_donut, width="stretch")
 
                 with chart_col2:
-                    # Horizontal bar — per-app hours
                     sorted_df = clean_df.sort_values("hours", ascending=True)
                     fig_bar = go.Figure(
                         go.Bar(
@@ -668,26 +687,18 @@ if submitted:
                             orientation="h",
                             marker=dict(
                                 color=sorted_df["hours"],
-                                colorscale=[[0, '#6C63FF'], [
-                                    0.5, '#A78BFA'], [1, '#F472B6']],
+                                colorscale=[[0, '#6C63FF'], [0.5, '#A78BFA'], [1, '#F472B6']],
                                 cornerradius=6,
                             ),
-                            text=sorted_df["hours"].apply(
-                                lambda v: f"{v:.1f}h"),
+                            text=sorted_df["hours"].apply(lambda v: f"{v:.1f}h"),
                             textposition="outside",
                             textfont=dict(color="#E8E6F0"),
                             hovertemplate="<b>%{y}</b><br>%{x:.1f} hrs<extra></extra>",
                         )
                     )
                     _plotly_dark_layout(fig_bar, "Hours per App")
-                    fig_bar.update_yaxes(
-                        tickfont=dict(color="#E8E6F0"),
-                        gridcolor="rgba(108,99,255,.06)",
-                    )
-                    fig_bar.update_xaxes(
-                        tickfont=dict(color="#9B97B0"),
-                        gridcolor="rgba(108,99,255,.06)",
-                    )
+                    fig_bar.update_yaxes(tickfont=dict(color="#E8E6F0"), gridcolor="rgba(108,99,255,.06)")
+                    fig_bar.update_xaxes(tickfont=dict(color="#9B97B0"), gridcolor="rgba(108,99,255,.06)")
                     fig_bar.update_layout(height=340)
                     st.plotly_chart(fig_bar, width="stretch")
 
@@ -696,8 +707,7 @@ if submitted:
                     fig_radar = go.Figure()
                     fig_radar.add_trace(go.Scatterpolar(
                         r=cat_df["hours"].tolist() + [cat_df["hours"].iloc[0]],
-                        theta=cat_df["type"].tolist(
-                        ) + [cat_df["type"].iloc[0]],
+                        theta=cat_df["type"].tolist() + [cat_df["type"].iloc[0]],
                         fill='toself',
                         fillcolor='rgba(108,99,255,.15)',
                         line=dict(color='#6C63FF', width=2),
@@ -708,49 +718,30 @@ if submitted:
                     fig_radar.update_layout(
                         polar=dict(
                             bgcolor='rgba(0,0,0,0)',
-                            radialaxis=dict(
-                                gridcolor='rgba(108,99,255,.12)',
-                                color='#9B97B0',
-                            ),
-                            angularaxis=dict(
-                                gridcolor='rgba(108,99,255,.12)',
-                                color='#E8E6F0',
-                            ),
+                            radialaxis=dict(gridcolor='rgba(108,99,255,.12)', color='#9B97B0'),
+                            angularaxis=dict(gridcolor='rgba(108,99,255,.12)', color='#E8E6F0'),
                         ),
                         height=380,
                     )
                     st.plotly_chart(fig_radar, width="stretch")
 
-                # --- AI text insights (rendered as native markdown for table support) ---
+                # --- AI text insights ---
                 st.markdown("""
                 <div class="insights-container">
                     <h4>🤖 AI Recommendations</h4>
                 </div>
                 """, unsafe_allow_html=True)
+                st.markdown(result["insights"])
 
-                # Use native st.markdown so pipe-table syntax renders as a real table
-                st.markdown(analysis.insights)
-
-                # ── Save to database ──────────────────────────────────
-                save_analysis(
-                    user_id=db_user_id,
-                    daily_hours=auto_total,
-                    apps=apps_list,
-                    summary=str(analysis.summary),
-                    insights=str(analysis.insights),
-                    is_addicted=str(analysis.isAddicted),
-                )
-                st.toast(
-                    f"✅ Analysis saved for {user_name.strip()}!", icon="💾")
+                st.toast(f"✅ Analysis saved for {user_name.strip()}!", icon="💾")
 
             except Exception as e:
-                st.error(
-                    f"An error occurred while generating analysis: {str(e)}")
+                st.error(f"An error occurred: {str(e)}")
+
 
 # ── Past Analysis History ─────────────────────────────────────────────────────
 if user_name.strip():
-    _uid = get_or_create_user(user_name)
-    history = get_user_history(_uid, limit=5)
+    history = api_get_history(user_name.strip(), limit=5)
     if history:
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         st.markdown("""
@@ -762,17 +753,17 @@ if user_name.strip():
         for idx, rec in enumerate(history):
             addicted_label = (
                 '<span class="badge danger">🚨 Addicted</span>'
-                if str(rec["is_addicted"]).strip().lower() == "true"
+                if str(rec.get("is_addicted", "")).strip().lower() == "true"
                 else '<span class="badge success">✅ Healthy</span>'
             )
             st.markdown(f"""
             <div class="result-card summary" style="margin-bottom:.8rem;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem;">
-                    <span style="color:var(--text-secondary); font-size:.82rem;">🕐 {rec["analyzed_at"]}</span>
-                    <span style="font-weight:700; color:#A78BFA;">{rec["daily_hours"]:.1f} hrs</span>
+                    <span style="color:var(--text-secondary); font-size:.82rem;">🕐 {rec.get("analyzed_at", "N/A")}</span>
+                    <span style="font-weight:700; color:#A78BFA;">{rec.get("daily_hours", 0):.1f} hrs</span>
                     {addicted_label}
                 </div>
-                <p style="color:var(--text-secondary); margin-top:.5rem; font-size:.9rem;">{rec["summary"]}</p>
+                <p style="color:var(--text-secondary); margin-top:.5rem; font-size:.9rem;">{rec.get("summary", "")}</p>
             </div>
             """, unsafe_allow_html=True)
 

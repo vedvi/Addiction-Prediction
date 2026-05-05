@@ -1,6 +1,6 @@
 # 📱 ScreenTime AI
 
-> **AI-powered screen time analyzer** — Enter your daily app usage, and an AI agent gives you brutally honest, human-like feedback on your habits. Built with **DSPy**, **Streamlit**, and **Groq**.
+> **AI-powered screen time analyzer** — Enter your daily app usage, and an AI agent gives you brutally honest, human-like feedback on your habits. Built with **DSPy**, **FastAPI**, **Streamlit**, and **Groq**.
 
 ---
 
@@ -10,6 +10,7 @@
 - 📊 **Interactive Charts** — Donut chart, bar chart, and radar chart visualize your usage breakdown
 - 📝 **Actionable Insights** — AI returns a clear Issue → Action table with no fluff
 - ⚠️ **Addiction Detection** — Flags unhealthy behavior (>10h total, >60% social media, gaming >2h, etc.)
+- 🚀 **FastAPI Backend** — RESTful API server with Swagger docs, ready for deployment
 - 💾 **SQLite Database** — Saves user profiles and analysis history across sessions
 - 📜 **Past Analyses** — View your last 5 analysis results directly in the app
 - 🌌 **Interactive UI** — Dark glassmorphism theme with animated particle background
@@ -64,13 +65,13 @@ source .venv/bin/activate
 Using **uv**:
 
 ```bash
-uv pip install streamlit dspy plotly
+uv pip install streamlit dspy plotly fastapi uvicorn requests
 ```
 
 Or using **pip**:
 
 ```bash
-pip install streamlit dspy plotly
+pip install streamlit dspy plotly fastapi uvicorn requests
 ```
 
 ### 4. Set Up Environment Variables
@@ -83,18 +84,61 @@ GROQ_API_KEY=your_groq_api_key_here
 
 ### 5. Run the App
 
+You need **two terminals** — one for the backend API and one for the frontend.
+
+**Terminal 1 — Start the FastAPI backend:**
+
+```bash
+python -m uvicorn backend.server:app --reload --port 8000
+```
+
+**Terminal 2 — Start the Streamlit frontend:**
+
 ```bash
 streamlit run ./frontend/main.py
 ```
 
-The app will open at **http://localhost:8501** in your browser.
+| Service | URL |
+|---|---|
+| 🖥️ Frontend (Streamlit) | http://localhost:8501 |
+| ⚙️ Backend API | http://localhost:8000 |
+| 📖 API Docs (Swagger) | http://localhost:8000/docs |
+
+---
+
+## 🔌 API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Health check |
+| `POST` | `/analyze` | Run AI analysis (creates user + saves results) |
+| `GET` | `/users` | List all registered user names |
+| `POST` | `/users?name=X` | Get or create a user by name |
+| `GET` | `/history/{user_name}` | Get past analyses for a user |
+
+### Example — Analyze Usage
+
+```bash
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_name": "Mohit",
+    "daily_usage_hours": 6.5,
+    "apps": [
+      {"name": "instagram", "hours": 2.0, "type": "social media"},
+      {"name": "wikipedia", "hours": 1.5, "type": "education"},
+      {"name": "bgmi", "hours": 1.5, "type": "games"},
+      {"name": "youtube", "hours": 1.5, "type": "entertainment"}
+    ]
+  }'
+```
 
 ---
 
 ## 🧪 How to Use
 
 1. **Enter your name** in the User Information field
-2. **Fill in your apps** — type the app name, hours used, and select a category (social media, games, education, etc.)
+2. **Fill in your apps** — type the app name, hours used, and select a category
 3. **Add or delete rows** using the `+` button or by selecting a row and pressing `Delete`
 4. **Click "✨ Analyze My Screen Time"**
 5. **View your results:**
@@ -130,9 +174,7 @@ The backend uses **DSPy** with **Groq's LLM** to run a `ChainOfThought` analysis
 
 ## 🗄️ Database
 
-The app uses **SQLite** (zero setup required). A `screentime.db` file is auto-created in the project root on first run.
-
-### Tables
+The app uses **SQLite** (zero setup required). A `screentime.db` file is auto-created on first run.
 
 | Table | Columns | Purpose |
 |---|---|---|
@@ -147,6 +189,7 @@ The app uses **SQLite** (zero setup required). A `screentime.db` file is auto-cr
 |---|---|
 | **AI Agent** | [DSPy](https://github.com/stanfordnlp/dspy) with `ChainOfThought` |
 | **LLM Provider** | [Groq](https://groq.com) (free tier available) |
+| **Backend API** | [FastAPI](https://fastapi.tiangolo.com) + [Uvicorn](https://www.uvicorn.org) |
 | **Frontend** | [Streamlit](https://streamlit.io) |
 | **Charts** | [Plotly](https://plotly.com/python/) |
 | **Database** | SQLite (built-in Python) |
@@ -156,7 +199,7 @@ The app uses **SQLite** (zero setup required). A `screentime.db` file is auto-cr
 
 ## 👤 Author
 
-**MOHIT** — Built with ❤️ using DSPy & Streamlit
+**MOHIT** — Built with ❤️ using DSPy, FastAPI & Streamlit
 
 ---
 
